@@ -3,6 +3,7 @@ package http2
 import (
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"time"
@@ -59,8 +60,13 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 	buf := make([]byte, 4*1024)
 
 	go func() {
-		time.Sleep(2 * time.Second)
-		w.Write([]byte("Server: Pushed message from server! \n"))
+		rand.Seed(time.Now().UnixNano())
+		for {
+			randomSeconds := rand.Intn(4) + 3
+			time.Sleep(time.Duration(randomSeconds) * time.Second)
+			w.Write([]byte("Server: Pushed message from server! \n"))
+			flusher.Flush()
+		}
 	}()
 
 	for {
