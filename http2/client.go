@@ -3,11 +3,12 @@ package http2
 import (
 	"bufio"
 	"crypto/tls"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"strconv"
+	"os"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -51,20 +52,18 @@ func (c *Client) Post(data []byte) {
 
 	// In a separate goroutine, write data to the request body
 	go func() {
-		// TODO - remove comment
-		defer pw.Close()
+		// We don't close so we keep this socket alive
+		//defer pw.Close()
 
 		// Write to the pipe
-		for i := 0; i < 5; i++ {
-			pw.Write([]byte("streaming data " + strconv.Itoa(i) + "\n"))
-			time.Sleep(1000 * time.Millisecond)
+		for i := 0; i < 1; i++ {
+			pw.Write([]byte("server intialized"))
+			time.Sleep(100 * time.Millisecond)
 		}
 	}()
 
 	// Sends the request
-	log.Println("Executing request..")
 	resp, err := c.client.Do(req)
-	log.Println("Request sent..")
 
 	if err != nil {
 		log.Println(err)
@@ -84,26 +83,30 @@ func (c *Client) Post(data []byte) {
 	var totalBytesReceived int
 
 	// Reads the response
-	for {
-		len, err := bufferedReader.Read(buffer)
+	go func() {
+		for {
+			len, err := bufferedReader.Read(buffer)
 
-		if len > 0 {
-			totalBytesReceived += len
-			log.Println("Client:\n" + string(buffer[:len]))
-		}
-
-		if err != nil {
-			if err == io.EOF {
-				// Last chunk received
-				log.Println(err)
+			if len > 0 {
+				totalBytesReceived += len
+				fmt.Println("\nEchoed msg: " + string(buffer[:len]))
 			}
-			break
-		}
-	}
 
-	/* 	fmt.Print("Msg to send: ")
-	   	stdin := bufio.NewReader(os.Stdin)
-	   	msg, err := stdin.ReadString('\n')
-	   	pw.Write([]byte(msg)) */
-	//log.Println("Total Bytes Sent:", len(data))
+			if err != nil {
+				if err == io.EOF {
+					// Last chunk received
+					log.Println(err)
+				}
+				break
+			}
+		}
+	}()
+
+	for {
+		time.Sleep(300 * time.Millisecond)
+		fmt.Print("Msg to send: ")
+		stdin := bufio.NewReader(os.Stdin)
+		msg, _ := stdin.ReadString('\n')
+		pw.Write([]byte(msg))
+	}
 }
