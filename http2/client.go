@@ -19,20 +19,19 @@ type Client struct {
 
 func (c *Client) Dial() {
 	// Adds TLS cert-key pair
-	/* certs, err := tls.LoadX509KeyPair("./http2/certs/key.crt", "./http2/certs/key.key")
+	certs, err := tls.LoadX509KeyPair("./http2/certs/key.crt", "./http2/certs/key.key")
 	if err != nil {
 		log.Fatal(err)
-	} */
+	}
 
 	t := &http2.Transport{
 		TLSClientConfig: &tls.Config{
-			//Certificates:       []tls.Certificate{certs},
+			Certificates:       []tls.Certificate{certs},
 			InsecureSkipVerify: true,
 		},
 	}
 
 	c.client = &http.Client{Transport: t}
-
 }
 
 func (c *Client) Post(data []byte) {
