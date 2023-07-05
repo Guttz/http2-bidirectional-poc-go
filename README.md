@@ -1,14 +1,17 @@
-## Example of HTTP/2 Streaming in Go
+## POC Bidirectional Streaming with http2
 
-Install the required packages:
+Install packages:
 
 ```sh
-$ go get golang.org/x/net/http2
-$ go get github.com/julienschmidt/httprouter
+$ go mod tidy
 ```
 
-Run Client & Server together to see it in action:
+Start the demo: 
 
 ```sh
 $ go run main.go
 ```
+
+You should send a prompt asking for the message to send. If you write a message and press enter, it's going to be sent to the server and the server will respond with the same message back. Sometimes the server will also push random messages to show it can also push messages to the client.
+
+We basically have one http2 full duplex connection that can be used from both server and client to communicate to one another.
