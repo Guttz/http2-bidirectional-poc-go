@@ -8,8 +8,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-
-	"golang.org/x/net/http2"
 )
 
 type Client struct {
@@ -23,7 +21,7 @@ func (c *Client) Dial() {
 		log.Fatal(err)
 	}
 
-	t := &http2.Transport{
+	t := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			Certificates:       []tls.Certificate{certs},
 			InsecureSkipVerify: true,

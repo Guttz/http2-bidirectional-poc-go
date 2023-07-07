@@ -36,11 +36,11 @@ func (s *Server) Initialize() error {
 func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.Params) {
 	// We only accept HTTP/2!
 	// (Normally it's quite common to accept HTTP/1.- and HTTP/2 together.)
-	if req.ProtoMajor != 2 {
+	/* if req.ProtoMajor != 2 {
 		log.Println("Not a HTTP/2 request, rejected!")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}
+	} */
 
 	// Set headers related to event streaming
 	w.Header().Set("Cache-Control", "no-cache")
@@ -52,10 +52,11 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 	if err != nil {
 		log.Println(err)
 	}
+
+	// Simulate processing time
 	wait := 40 + rand.Intn(21)
 	time.Sleep(time.Duration(wait) * time.Millisecond)
 
 	w.Write(body)
-	w.WriteHeader(http.StatusOK)
 	req.Body.Close()
 }

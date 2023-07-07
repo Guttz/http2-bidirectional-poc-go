@@ -11,7 +11,7 @@ import (
 	"github.com/herrberk/go-http2-streaming/http2"
 )
 
-var CLIENTS = 1000
+var CLIENTS = 10
 var REQUESTS_PER_CLIENT = 1000
 
 func main() {
