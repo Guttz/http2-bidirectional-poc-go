@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"strconv"
 	"time"
 
@@ -18,7 +19,7 @@ func main() {
 	// from returning before the client connects to the server.
 	waitc := make(chan bool)
 
-	// Reads a file into memory
+	// Reads a file into memory - contains an example complete lsp request body
 	data, err := ioutil.ReadFile("./test.json")
 	if err != nil {
 		log.Println(err)
@@ -28,26 +29,38 @@ func main() {
 	startTime := time.Now()
 	totalRequestsDuration := time.Duration(0)
 	done := 0
-	// HTTP2 Client
+
 	go func() {
 		client := new(http2.Client)
 		client.Dial()
 
+		// We just use this to start to print the info we want when we reach the last results.
+		totalAmountOfReq := (CLIENTS * REQUESTS_PER_CLIENT * 95) / 100
 		for i := 0; i < CLIENTS; i++ {
 			go func(i int) {
-				startReqTime := time.Now()
-				client.Post(data, REQUESTS_PER_CLIENT)
-				reqTime := time.Since(startReqTime)
-				totalRequestsDuration += reqTime
-				done++
-				fmt.Println("done: " + strconv.Itoa(done))
-				if done == CLIENTS {
-					totalTime := time.Since(startTime)
-					totalRequestsDuration = totalRequestsDuration / time.Duration(CLIENTS)
-					fmt.Println("total time: ", totalTime.Seconds())
-					fmt.Println("avg request time per client: ", totalRequestsDuration.Seconds())
+				for j := 0; j < REQUESTS_PER_CLIENT; j++ {
+
+					// Simulate processing time
+					wait := 40 + rand.Intn(21)
+					time.Sleep(time.Duration(wait) * time.Millisecond)
+
+					go func() {
+						startReqTime := time.Now()
+
+						client.Post(data, REQUESTS_PER_CLIENT)
+						reqTime := time.Since(startReqTime)
+						totalRequestsDuration += reqTime
+						done++
+
+						if done > totalAmountOfReq {
+							totalTime := time.Since(startTime)
+							fmt.Println("total time: ", totalTime.Seconds())
+							fmt.Println("avg request time per client: ", (totalRequestsDuration / time.Duration(CLIENTS)).Seconds())
+						}
+					}()
 				}
 			}(i)
+			fmt.Println("done: " + strconv.Itoa(done))
 		}
 	}()
 

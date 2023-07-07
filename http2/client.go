@@ -1,15 +1,13 @@
 package http2
 
 import (
-	"bufio"
-	"math/rand"
+	"bytes"
+	"io"
 
 	"crypto/tls"
-	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"time"
 
 	"golang.org/x/net/http2"
 )
@@ -35,10 +33,11 @@ func (c *Client) Dial() {
 	c.client = &http.Client{Transport: t}
 }
 
-func (c *Client) Post(data []byte, requestsPerClient int) {
-	// Create a pipe to read and write data
-	pr, pw := io.Pipe()
+func nothing(data []byte) {
 
+}
+
+func (c *Client) Post(data []byte, requestsPerClient int) {
 	req := &http.Request{
 		Method: "POST",
 		URL: &url.URL{
@@ -47,24 +46,11 @@ func (c *Client) Post(data []byte, requestsPerClient int) {
 			Path:   "/",
 		},
 		Header: http.Header{},
-		Body:   pr,
+		Body:   io.NopCloser(bytes.NewReader(data)),
 	}
-
-	// In a separate goroutine, write data to the request body
-	go func() {
-		// We don't close so we keep this socket alive
-		//defer pw.Close()
-
-		// Write to the pipe
-		for i := 0; i < 1; i++ {
-			pw.Write([]byte("server intialized"))
-			time.Sleep(100 * time.Millisecond)
-		}
-	}()
 
 	// Sends the request
 	resp, err := c.client.Do(req)
-
 	if err != nil {
 		log.Println(err)
 		return
@@ -74,52 +60,15 @@ func (c *Client) Post(data []byte, requestsPerClient int) {
 		return
 	}
 
+	// we just want to make sure we read the body so it' similar to what we do when using a single request
+	body, err := io.ReadAll(resp.Body)
+	nothing(body)
+
 	defer resp.Body.Close()
 
-	bufferedReader := bufio.NewReader(resp.Body)
-
-	buffer := make([]byte, 4*1024)
-
-	var totalBytesReceived int
-
-	reachedEOF := make(chan bool)
-	// Reads the response
-	go func() {
-		for {
-			len, err := bufferedReader.Read(buffer)
-
-			if len > 0 {
-				totalBytesReceived += len
-				//fmt.Println("\nEchoed msg: " + string(buffer[:len]))
-			}
-
-			if err != nil {
-				if err == io.EOF {
-					// Last chunk received
-					log.Println(err)
-					reachedEOF <- true
-				}
-				break
-			}
-		}
-	}()
-
-	for i := 0; i < requestsPerClient; i++ {
-		/* time.Sleep(300 * time.Millisecond)
-		fmt.Print("Msg to send: ")
-		stdin := bufio.NewReader(os.Stdin)
-		msg, _ := stdin.ReadString('\n') */
-		//pw.Write([]byte(data))
-		//pw.Write([]byte("hi"))
-		//time.Sleep(100 * time.Millisecond)
-
-		// Simulate user typing
-		wait := 40 + rand.Intn(21)
-		time.Sleep(time.Duration(wait) * time.Millisecond)
-
-		pw.Write(data)
+	if resp.StatusCode == http.StatusOK {
+		//log.Println("POST request succeeded")
+	} else {
+		//log.Printf("POST request failed with status code %d", resp.StatusCode)
 	}
-
-	pw.Close()
-	<-reachedEOF
 }

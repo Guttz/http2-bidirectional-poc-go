@@ -42,65 +42,20 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 		return
 	}
 
-	flusher, ok := w.(http.Flusher)
-	if !ok {
-		http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
-		return
-	}
-
 	// Set headers related to event streaming
-	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Listen to the closing of the http connection via the CloseNotifier
-	notify := w.(http.CloseNotifier).CloseNotify()
+	w.Header().Set("Status", "200 OK")
+	body, err := io.ReadAll(req.Body)
 
-	buf := make([]byte, 4*1024)
-
-	/* go func() {
-		rand.Seed(time.Now().UnixNano())
-		for {
-			randomSeconds := rand.Intn(4) + 3
-			time.Sleep(time.Duration(randomSeconds) * time.Second)
-			//w.Write([]byte("Server: Pushed message from server! \n"))
-			flusher.Flush()
-		}
-	}() */
-
-	done := false
-	for {
-		select {
-		case <-notify:
-			log.Println("HTTP connection just closed.")
-			return
-		default:
-			// Write to the ResponseWriter
-			n, err := req.Body.Read(buf)
-			if n > 0 {
-				// Pause for a second to simulate some data processing.
-				wait := 40 + rand.Intn(21)
-				time.Sleep(time.Duration(wait) * time.Millisecond)
-				w.Write(buf[:n])
-			}
-
-			if err != nil {
-				if err == io.EOF {
-					w.Header().Set("Status", "200 OK")
-					req.Body.Close()
-				}
-				done = true
-				break
-			}
-
-			// Flush the data immediately instead of buffering it for later.
-			flusher.Flush()
-		}
-
-		if done {
-			break
-		}
+	if err != nil {
+		log.Println(err)
 	}
+	wait := 40 + rand.Intn(21)
+	time.Sleep(time.Duration(wait) * time.Millisecond)
 
+	w.Write(body)
+	w.WriteHeader(http.StatusOK)
+	req.Body.Close()
 }
