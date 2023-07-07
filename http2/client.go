@@ -2,13 +2,13 @@ package http2
 
 import (
 	"bufio"
+	"math/rand"
+
 	"crypto/tls"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"time"
 
 	"golang.org/x/net/http2"
@@ -35,7 +35,7 @@ func (c *Client) Dial() {
 	c.client = &http.Client{Transport: t}
 }
 
-func (c *Client) Post(data []byte) {
+func (c *Client) Post(data []byte, requestsPerClient int) {
 	// Create a pipe to read and write data
 	pr, pw := io.Pipe()
 
@@ -82,6 +82,7 @@ func (c *Client) Post(data []byte) {
 
 	var totalBytesReceived int
 
+	reachedEOF := make(chan bool)
 	// Reads the response
 	go func() {
 		for {
@@ -89,24 +90,36 @@ func (c *Client) Post(data []byte) {
 
 			if len > 0 {
 				totalBytesReceived += len
-				fmt.Println("\nEchoed msg: " + string(buffer[:len]))
+				//fmt.Println("\nEchoed msg: " + string(buffer[:len]))
 			}
 
 			if err != nil {
 				if err == io.EOF {
 					// Last chunk received
 					log.Println(err)
+					reachedEOF <- true
 				}
 				break
 			}
 		}
 	}()
 
-	for {
-		time.Sleep(300 * time.Millisecond)
+	for i := 0; i < requestsPerClient; i++ {
+		/* time.Sleep(300 * time.Millisecond)
 		fmt.Print("Msg to send: ")
 		stdin := bufio.NewReader(os.Stdin)
-		msg, _ := stdin.ReadString('\n')
-		pw.Write([]byte(msg))
+		msg, _ := stdin.ReadString('\n') */
+		//pw.Write([]byte(data))
+		//pw.Write([]byte("hi"))
+		//time.Sleep(100 * time.Millisecond)
+
+		// Simulate user typing
+		wait := 40 + rand.Intn(21)
+		time.Sleep(time.Duration(wait) * time.Millisecond)
+
+		pw.Write(data)
 	}
+
+	pw.Close()
+	<-reachedEOF
 }

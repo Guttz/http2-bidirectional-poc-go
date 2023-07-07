@@ -59,16 +59,17 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 
 	buf := make([]byte, 4*1024)
 
-	go func() {
+	/* go func() {
 		rand.Seed(time.Now().UnixNano())
 		for {
 			randomSeconds := rand.Intn(4) + 3
 			time.Sleep(time.Duration(randomSeconds) * time.Second)
-			w.Write([]byte("Server: Pushed message from server! \n"))
+			//w.Write([]byte("Server: Pushed message from server! \n"))
 			flusher.Flush()
 		}
-	}()
+	}() */
 
+	done := false
 	for {
 		select {
 		case <-notify:
@@ -78,6 +79,9 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 			// Write to the ResponseWriter
 			n, err := req.Body.Read(buf)
 			if n > 0 {
+				// Pause for a second to simulate some data processing.
+				wait := 40 + rand.Intn(21)
+				time.Sleep(time.Duration(wait) * time.Millisecond)
 				w.Write(buf[:n])
 			}
 
@@ -86,6 +90,7 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 					w.Header().Set("Status", "200 OK")
 					req.Body.Close()
 				}
+				done = true
 				break
 			}
 
@@ -93,8 +98,9 @@ func (s *Server) handler(w http.ResponseWriter, req *http.Request, _ httpRouter.
 			flusher.Flush()
 		}
 
-		// Pause for a second to simulate some data processing.
-		time.Sleep(time.Second)
+		if done {
+			break
+		}
 	}
 
 }
