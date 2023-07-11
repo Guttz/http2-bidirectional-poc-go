@@ -18,6 +18,8 @@ func handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (re
 }
 
 func Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result interface{}, err error) {
+	// AUTH - We could here do authentication to check if some token is valid everytime we receive a request, for example
+
 	// Prevent any uncaught panics from taking the entire server down.
 	defer func() {
 		if perr := panicf(recover(), "%v", req.Method); perr != nil {
