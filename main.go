@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -8,10 +9,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/herrberk/go-http2-streaming/http2"
+	"github.com/herrberk/go-http2-streaming/jsonrpc"
 )
 
-var CLIENTS = 10
+var CLIENTS = 1000
 var REQUESTS_PER_CLIENT = 1000
 
 func main() {
@@ -31,11 +32,10 @@ func main() {
 	done := 0
 
 	go func() {
-		client := new(http2.Client)
-		client.Dial()
+		client := jsonrpc.Client()
 
 		// We just use this to start to print the info we want when we reach the last results.
-		totalAmountOfReq := (CLIENTS * REQUESTS_PER_CLIENT * 95) / 100
+		totalAmountOfReq := (CLIENTS * REQUESTS_PER_CLIENT * 94) / 100
 		for i := 0; i < CLIENTS; i++ {
 			go func(i int) {
 				for j := 0; j < REQUESTS_PER_CLIENT; j++ {
@@ -47,12 +47,18 @@ func main() {
 					go func() {
 						startReqTime := time.Now()
 
-						client.Post(data, REQUESTS_PER_CLIENT)
+						var result jsonrpc.SomeType
+						err = client.Call(context.Background(), "SomeMethod", data, &result)
+						if err != nil {
+							log.Fatalf("Call failed: %v", err)
+						}
+
 						reqTime := time.Since(startReqTime)
 						totalRequestsDuration += reqTime
 						done++
 
 						if done > totalAmountOfReq {
+							fmt.Println("done: " + strconv.Itoa(done))
 							totalTime := time.Since(startTime)
 							fmt.Println("total time: ", totalTime.Seconds())
 							fmt.Println("avg request time per client: ", (totalRequestsDuration / time.Duration(CLIENTS)).Seconds())
@@ -65,12 +71,7 @@ func main() {
 	}()
 
 	// HTTP2 Server
-	server := new(http2.Server)
-	err = server.Initialize()
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	jsonrpc.Server()
 
 	// Waits forever
 	<-waitc

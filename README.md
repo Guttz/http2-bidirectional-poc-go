@@ -16,6 +16,10 @@ You should send a prompt asking for the message to send. If you write a message 
 
 We basically have one http2 full duplex connection that can be used from both server and client to communicate to one another.
 
+## HTTP2 one tunnel, mutiplexing and http1 benchmarks
+
+Take a look at the other branchs in the repo, where there are pocs for the benchmarks.
+
 ## Gotchas
 
 HTTP2 will buffer the body as default and wait for it to be closed before sending it to the server and also sending the response back to the client. So on the server side we have to convert our writer to a http flusher and flush the buffer everytime we want to immediately send the buffer content to the client. On the client side we create a in-memory pipe and write. 
