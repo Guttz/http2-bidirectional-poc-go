@@ -3,7 +3,9 @@ package jsonrpc
 import (
 	"context"
 	"log"
+	"math/rand"
 	"net"
+	"time"
 
 	"github.com/sourcegraph/jsonrpc2"
 )
@@ -12,10 +14,14 @@ func handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (re
 	// todo return the body
 	switch req.Method {
 	case "initialize":
-		return nil, nil
+		return req.Params, nil
 		//return nil, &jsonrpc2.Error{Code: jsonrpc2.CodeMethodNotFound, Message: fmt.Sprintf("method not supported: %s", req.Method)}
 	}
-	return nil, nil
+
+	wait := 40 + rand.Intn(21)
+	time.Sleep(time.Duration(wait) * time.Millisecond)
+
+	return req.Params, nil
 }
 
 func Handle(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result interface{}, err error) {
